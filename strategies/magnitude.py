@@ -20,7 +20,6 @@ from .utils import (fraction_threshold,
                     importance_masks,
                     activation_importance)
 
-
 class GlobalMagWeight(VisionPruning):
 
     def model_masks(self):
@@ -28,6 +27,23 @@ class GlobalMagWeight(VisionPruning):
         flat_importances = flatten_importances(importances)
         threshold = fraction_threshold(flat_importances, self.fraction)
         masks = importance_masks(importances, threshold)
+        # print(flatten_importances(masks).mean())
+        return masks
+
+class GlobalMagWeightInclusive(VisionPruning):
+
+    def model_masks(self):
+        importances = map_importances(np.abs, self.params())
+        flat_importances = flatten_importances(importances)
+
+        if hasattr(self, "prev_masks"):
+            flat_importances = flat_importances[self.prev_masks]
+
+        threshold = fraction_threshold(flat_importances, self.fraction)
+        masks = importance_masks(importances, threshold)
+
+        self.prev_masks = flatten_importances(masks).astype(np.bool)
+        # print(self.prev_masks.mean())
         return masks
 
 

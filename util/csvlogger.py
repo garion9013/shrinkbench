@@ -2,11 +2,11 @@
 """
 import csv
 import torch
-
+import os
 
 class CSVLogger:
 
-    def __init__(self, file, columns):
+    def __init__(self, file, columns, delimiter=','):
         """General purpose CSV Logger
 
         Initialized with a set of columns, it then has two operations
@@ -17,14 +17,16 @@ class CSVLogger:
             file {str} -- Path to file
             columns {List[str]} -- List of keys that CSV is going to log
         """
-
-        self.file = open(file, 'w')
+        self.file = open(file, 'a', newline='')
         self.columns = columns
         self.values = {}
 
-        self.writer = csv.writer(self.file)
+        self.writer = csv.writer(self.file, delimiter=delimiter)
         self.writer.writerow(self.columns)
         self.file.flush()
+
+    def comment(self, contents="# This is comment\r\n"):
+        self.file.write(contents+"\r\n")
 
     def set(self, **kwargs):
         """Set value for current row

@@ -7,7 +7,6 @@ rest of the framework pipeline
 
 import numpy as np
 
-
 def fraction_threshold(tensor, fraction):
     """Compute threshold quantile for a given scoring function
 
@@ -25,7 +24,9 @@ def fraction_threshold(tensor, fraction):
         float -- Threshold
     """
     assert isinstance(tensor, np.ndarray)
-    threshold = np.quantile(tensor, 1-fraction)
+    nparam = sum(tensor.shape)
+    k = int(np.round(nparam*(1-fraction)))
+    threshold = max(np.partition(tensor, k)[:k])
     return threshold
 
 

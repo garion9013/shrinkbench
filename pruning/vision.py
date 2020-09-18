@@ -7,10 +7,14 @@ from .modules import MaskedModule
 
 class VisionPruning(Pruning):
 
-    def __init__(self, model, inputs=None, outputs=None, compression=1):
-        super().__init__(model, inputs, outputs, compression=compression)
+    def __init__(self, model, inputs=None, outputs=None, **kwargs):
+        super().__init__(model, inputs, outputs, **kwargs)
+        self.init(self.compression)
+
+    def init(self, compression):
+        # OYH: seems prunable isn't inplace updated during backward pass. while model is
         self.prunable = self.prunable_modules()
-        self.fraction = fraction_to_keep(self.compression, self.model, self.prunable)
+        self.fraction = fraction_to_keep(compression, self.model, self.prunable)
 
     def can_prune(self, module):
 

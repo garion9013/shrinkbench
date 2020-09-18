@@ -43,10 +43,18 @@ class Pruning(ABC):
         pass
         # return masks
 
-    def apply(self, masks=None):
-        if masks is None:
-            masks = self.model_masks()
-        return mask_module(self.model, masks)
+    def update_context(self, step):
+        # Update prunable parameters after backward pass
+        sparsity, next_waiting_steps = self.schedule(self, step)
+        self.compression = 1/(1-sparsity)
+        self.init(self.compression)
+        return next_waiting_steps
+
+    def apply(self, step):
+        next_waiting_steps = self.update_context(step)
+        masks = self.model_masks()
+        mask_module(self.model, masks)
+        return next_waiting_steps
 
     @abstractmethod
     def can_prune(self, module):

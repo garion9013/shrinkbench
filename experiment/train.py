@@ -19,7 +19,7 @@ from ..util import printc, OnlineStats
 
 class TrainingExperiment(Experiment):
 
-    default_dl_kwargs = {'batch_size': 128,
+    default_dl_kwargs = {'batch_size': 16,
                          'pin_memory': False,
                          'num_workers': 8
                          }
@@ -216,8 +216,13 @@ class TrainingExperiment(Experiment):
                 ]
 
     def __repr__(self):
+        params = self.params
         if not isinstance(self.params['model'], str) and isinstance(self.params['model'], torch.nn.Module):
-            self.params['model'] = self.params['model'].__module__
-        
+            params['model'] = self.params['model'].__module__
+
+        schedule = params["pruning_kwargs"]["schedule"]
+        if hasattr(schedule, "__call__"):
+            params["pruning_kwargs"]["schedule"] = schedule.__name__
+
         assert isinstance(self.params['model'], str), f"\nUnexpected model inputs: {self.params['model']}"
-        return json.dumps(self.params, indent=4)
+        return json.dumps(params, indent=4)

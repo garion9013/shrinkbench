@@ -1,6 +1,7 @@
 from collections import defaultdict
 from ..util import AutoMap
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 COLORS = defaultdict(lambda: AutoMap(plt.get_cmap('Set1').colors))
 LINES = defaultdict(lambda: AutoMap(['-', '--', ':', '-.']))
@@ -13,7 +14,6 @@ def reset_plt():
     COLORS = defaultdict(lambda: AutoMap(plt.get_cmap('Set1').colors))
     LINES = defaultdict(lambda: AutoMap(['-', '--', ':', '-.']))
     MARKERS = defaultdict(lambda: AutoMap(['o', 's', 'v', '^', '<', '>', 'P']))
-
 
 def plot_df(df,
             x_column,
@@ -115,3 +115,9 @@ def plot_df(df,
     ticks = sorted(set(df[x_column]))
     plt.xticks(ticks, map(str, ticks))
     plt.legend()
+
+def save_to_pdf(name="output.pdf"):
+    pp = PdfPages(name)
+    plt.savefig(pp, format='pdf')
+    pp.close()
+    plt.close()

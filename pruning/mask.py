@@ -43,33 +43,33 @@ def mask_module(module, masks):
     return module
 
 
-def apply_masks(module, masks):
-    """Recursively mask a torch.nn Module
-
-    Zeros out masked parameters, does not change the layer
-    Note this operates inplace and modifies the passed network
-
-    Arguments:
-        module {torch.nn.Module} -- Module to mask
-        masks Dict(torch.nn.Module : Dict(str:numpy.ndarray))
-            -- Dictionary with masks for each weight tensor
-
-    Returns:
-        torch.nn.Module -- Same as id as input module, but after masking
-    """
-    for name, submodule in module.named_children():
-
-        if submodule in masks:
-
-            for attr, mask in masks[submodule].items():
-                param = getattr(submodule, attr)
-                mask = _same_device(_ensure_tensor(mask), param)
-                param.data.mul_(mask)
-
-        # Recurse if children
-        apply_masks(submodule, masks)
-
-    return module
+# def apply_masks(module, masks):
+#     """Recursively mask a torch.nn Module
+#
+#     Zeros out masked parameters, does not change the layer
+#     Note this operates inplace and modifies the passed network
+#
+#     Arguments:
+#         module {torch.nn.Module} -- Module to mask
+#         masks Dict(torch.nn.Module : Dict(str:numpy.ndarray))
+#             -- Dictionary with masks for each weight tensor
+#
+#     Returns:
+#         torch.nn.Module -- Same as id as input module, but after masking
+#     """
+#     for name, submodule in module.named_children():
+#
+#         if submodule in masks:
+#
+#             for attr, mask in masks[submodule].items():
+#                 param = getattr(submodule, attr)
+#                 mask = _same_device(_ensure_tensor(mask), param)
+#                 param.data.mul_(mask)
+#
+#         # Recurse if children
+#         apply_masks(submodule, masks)
+#
+#     return module
 
 
 # Aux functions

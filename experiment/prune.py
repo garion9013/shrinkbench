@@ -4,20 +4,32 @@ from .train import TrainingExperiment
 
 from .. import strategies
 from ..metrics import model_size, flops
-from ..util import printc
+from ..util import printc, OnlineStats
+import time
+from tqdm import tqdm
+import torch
+from ..metrics import correct
 
 
 class PruningExperiment(TrainingExperiment):
 
+    default_pruning_kwargs = {
+        'initial_sparsity': 0.5,
+        'final_sparsity': 0.9,
+        'begin_epoch': 0,
+        'end_epoch': 10,
+        'strategy': "GlobalMagWeight",
+        'schedule': None,
+    }
+
     def __init__(self,
                  dataset,
                  model,
-                 strategy,
-                 compression,
                  seed=42,
                  path=None,
                  dl_kwargs=dict(),
                  train_kwargs=dict(),
+                 pruning_kwargs=dict(),
                  debug=False,
                  pretrained=True,
                  resume=None,
@@ -25,19 +37,35 @@ class PruningExperiment(TrainingExperiment):
                  save_freq=10):
 
         super(PruningExperiment, self).__init__(dataset, model, seed, path, dl_kwargs, train_kwargs, debug, pretrained, resume, resume_optim, save_freq)
-        self.add_params(strategy=strategy, compression=compression)
+        pruning_kwargs = {**self.default_pruning_kwargs, **pruning_kwargs}
 
-        self.apply_pruning(strategy, compression)
+        params = locals()
+        params['pruning_kwargs'] = pruning_kwargs
+        self.add_params(**params)
+        # Save params
+
+        # Build pruning context
+        self.build_pruning(**pruning_kwargs)
+        self.steps_after_pruning = 0
+        self.steps = 0
 
         self.path = path
         self.save_freq = save_freq
+        self.metrics = []
 
-    def apply_pruning(self, strategy, compression):
-        constructor = getattr(strategies, strategy)
-        x, y = next(iter(self.train_dl))
-        self.pruning = constructor(self.model, x, y, compression=compression)
-        self.pruning.apply()
-        printc("Masked model", color='GREEN')
+    def build_pruning(self, **kwargs):
+        constructor = getattr(strategies, kwargs['strategy'])
+        data_iter = iter(self.train_dl)
+        x, y = next(data_iter)
+
+        # Inferred pruning parameters
+        kwargs["compression"] = 1/(1-kwargs["initial_sparsity"])
+        kwargs["begin_step"] = kwargs["begin_epoch"] * len(data_iter)
+        kwargs["end_step"] = kwargs["end_epoch"] * len(data_iter)
+
+        # Firstly apply pruning and update context
+        self.pruning = constructor(self.model, x, y, **kwargs)
+        self.waiting_steps = kwargs["begin_step"]
 
     def run(self):
         self.freeze()
@@ -50,15 +78,96 @@ class PruningExperiment(TrainingExperiment):
         if self.pruning.compression > 1:
             self.run_epochs()
 
-    def save_metrics(self):
-        self.metrics = self.pruning_metrics()
+    def run_epoch(self, train, epoch=0):
+        if train:
+            self.model.train()
+            prefix = 'train'
+            dl = self.train_dl
+        else:
+            prefix = 'val'
+            dl = self.val_dl
+            self.model.eval()
+
+        total_loss = OnlineStats()
+        acc1 = OnlineStats()
+        acc5 = OnlineStats()
+
+        epoch_iter = tqdm(dl)
+        epoch_iter.set_description(f"{prefix.capitalize()} Epoch {epoch}/{self.epochs}")
+
+        with torch.set_grad_enabled(train):
+            for i, (x, y) in enumerate(epoch_iter, start=1):
+                x, y = x.to(self.device), y.to(self.device)
+
+                # Conditionally triggers pruning:
+                # self.steps_after_pruning: how many mini-batch steps are performed 
+                # self.steps: total steps during training/pruning process
+                # Note that waiting_steps can be dynamically changed by user-specified schedule fn
+                if train and self.steps_after_pruning >= self.waiting_steps:
+                    self.waiting_steps = self.pruning.apply(self.steps)
+                    self.save_metrics(steps=self.steps)
+                    self.steps_after_pruning = 0
+
+                # Forward
+                yhat = self.model(x)
+                loss = self.loss_func(yhat, y)
+
+                # Backward
+                if train:
+                    self.optim.zero_grad()
+                    loss.backward()
+                    self.optim.step()
+                    self.steps_after_pruning += 1
+                    self.steps += 1
+
+                    
+                c1, c5 = correct(yhat, y, (1, 5))
+                total_loss.add(loss.item() / dl.batch_size)
+                acc1.add(c1 / dl.batch_size)
+                acc5.add(c5 / dl.batch_size)
+
+                epoch_iter.set_postfix(loss=total_loss.mean, top1=acc1.mean, top5=acc5.mean)
+
+        self.log(**{
+            f'{prefix}_loss': total_loss.mean,
+            f'{prefix}_acc1': acc1.mean,
+            f'{prefix}_acc5': acc5.mean,
+        })
+
+        return total_loss.mean, acc1.mean, acc5.mean
+
+    def run_epochs(self):
+        since = time.time()
+        try:
+            for epoch in range(self.epochs):
+                printc(f"Start epoch {epoch}", color='YELLOW')
+                self.train(epoch)
+                self.eval(epoch)
+                # Checkpoint epochs
+                # TODO Model checkpointing based on best val loss/acc
+                if epoch % self.save_freq == 0:
+                    self.checkpoint()
+                # TODO Early stopping
+                # TODO ReduceLR on plateau?
+                self.log(timestamp=time.time()-since)
+                self.log_epoch(epoch)
+
+
+        except KeyboardInterrupt:
+            printc(f"\nInterrupted at epoch {epoch}. Tearing Down", color='RED')
+
+    def save_metrics(self, steps=0):
+        metric = self.pruning_metrics()
+        metric["steps"] = steps
+        self.metrics.append(metric)
         with open(self.path / 'metrics.json', 'w') as f:
             json.dump(self.metrics, f, indent=4)
-        printc(json.dumps(self.metrics, indent=4), color='GRASS')
+        # printc(json.dumps(self.metrics, indent=4), color='GRASS')
+
         summary = self.pruning.summary()
         summary_path = self.path / 'masks_summary.csv'
         summary.to_csv(summary_path)
-        print(summary)
+        # print(summary)
 
     def pruning_metrics(self):
 

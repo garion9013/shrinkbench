@@ -12,7 +12,7 @@ COLUMNS = ['dataset', 'model',
            'completed_epochs', 'path']
 
 
-def df_from_results(results_path, glob='*'):
+def df_from_results(results_path, glob='*', delimiter=","):
     results = []
     results_path = pathlib.Path(results_path)
 
@@ -21,7 +21,7 @@ def df_from_results(results_path, glob='*'):
             params = eval(json.load(f)['params'])
         with open(exp / 'metrics.json', 'r') as f:
             metrics = json.load(f)
-        logs = pd.read_csv(exp / 'logs.csv')
+        logs = pd.read_csv(exp / 'logs.csv', delimiter=delimiter)
 
         row = [
             # Params

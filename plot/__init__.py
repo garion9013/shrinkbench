@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from ..util import AutoMap
 from .data import df_from_results, df_filter
-from .plot import plot_df
+from .plot import plot_df, save_to_pdf
 
 CMAP = plt.get_cmap('Set1')
 
