@@ -25,10 +25,10 @@ def debugger(function):
 # Zhu et al.,ICLR '18 and keras implementation
 # @debugger
 # Stateless generator
-def polynomial_decay_const_freq(self, step):
+def polynomial_decay_const_freq(ctxt, step=0, initial_sparsity=0.5, final_sparsity=0.95):
     # Gradually increasing pruning rate
-    p = min(1.0, max(0.0, (step - self.begin_step) / (self.end_step - self.begin_step)))
-    sparsity = (self.initial_sparsity - self.final_sparsity) * pow(1 - p, 3) + self.final_sparsity
+    p = min(1.0, max(0.0, (step - ctxt.begin_step) / (ctxt.end_step - ctxt.begin_step)))
+    sparsity = (initial_sparsity - final_sparsity) * pow(1 - p, 3) + final_sparsity
 
     # Constant frequency
     waiting_steps = 100
@@ -36,12 +36,12 @@ def polynomial_decay_const_freq(self, step):
 
 # Stateful generator
 class const_sp_const_freq(ABC):
-    def __init__(self, pruning):
-        target_sparsity = 0.95
+    def __init__(self, n=10):
+        target_sparsity = 0.98
 
         # Constant sparsity w/ n-steps
         # Constant state
-        self.n = 10
+        self.n = n
         self.step_sparsity = 1-(1-target_sparsity)**(1.0/self.n)
         self.waiting_steps = np.floor(float(pruning.end_step - pruning.begin_step) / self.n)
 
@@ -56,17 +56,7 @@ class const_sp_const_freq(ABC):
         # Constant frequency
         return prev_sparsity, waiting_steps
 
-def const_sp_lraware_freq(self, step):
-    n = 2
-    # Constant sparsity w/ n-steps
-    target_sparsity = 0.98
-    sparsity = 1-(1-target_sparsity)**(1.0/(n+1))
-
-    # Constant frequency
-    waiting_steps = np.ceil(float(self.end_step - self.begin_step) / n)
-    return sparsity, waiting_steps
-
-def nosparse(self, step):
+def nosparse(ctxt, step):
     sparsity = 0
 
     # Constant frequency
@@ -86,15 +76,15 @@ for strategy in ['GlobalMagWeight']:
                 # dataset='MNIST', 
                 # model='MnistNet',
                 pruning_kwargs={
-                    'initial_sparsity': 0.5,
-                    'final_sparsity': 0.98,
                     'begin_epoch': 0,
                     'end_epoch': 5,
                     'strategy': strategy,
                     'weight_reset_epoch': 0,
-                    # 'schedule': polynomial_decay_const_freq
-                    'schedule': const_sp_const_freq
-                    # 'schedule': nosparse
+                    'scheduler': polynomial_decay_const_freq,
+                    'scheduler_args': {"initial_sparsity":0.5, 'final_sparsity':0.9}
+                    # 'scheduler': const_sp_const_freq,
+                    # 'scheduler_args': {"n": 10}
+                    # 'scheduler': nosparse,
                 },
                 train_kwargs={
                     'epochs': 6,

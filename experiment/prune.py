@@ -14,12 +14,11 @@ from ..metrics import correct
 class PruningExperiment(TrainingExperiment):
 
     default_pruning_kwargs = {
-        'initial_sparsity': 0.5,
-        'final_sparsity': 0.9,
         'begin_epoch': 0,
         'end_epoch': 10,
         'strategy': "GlobalMagWeight",
-        'schedule': None,
+        'scheduler': None,
+        'scheduler_args': {},
     }
 
     def __init__(self,

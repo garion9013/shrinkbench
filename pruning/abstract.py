@@ -34,8 +34,8 @@ class Pruning(ABC):
         for k, v in pruning_params.items():
             setattr(self, k, v)
 
-        if isinstance(self.schedule, type):
-            self.schedule_gen = self.schedule(self)
+        if isinstance(self.scheduler, type):
+            self.scheduler_gen = self.scheduler(**self.scheduler_args)
 
     @abstractmethod
     def model_masks(self, prunable=None):
@@ -48,10 +48,12 @@ class Pruning(ABC):
 
     def update_context(self, step):
         # Update prunable parameters after backward pass
-        if hasattr(self, "schedule_gen"):
-            sparsity, next_waiting_steps = self.schedule_gen.next(step)
+        if hasattr(self, "scheduler_gen"):
+            # from generator class (stateful)
+            sparsity, next_waiting_steps = self.scheduler_gen.next(step)
         else:
-            sparsity, next_waiting_steps = self.schedule(self, step)
+            # from generator fn (stateless)
+            sparsity, next_waiting_steps = self.scheduler(self, step=step, **self.scheduler_args)
 
         self.compression = 1/(1-sparsity)
         assert self.compression >= 1, "Unacceptable compression rate"

@@ -220,9 +220,9 @@ class TrainingExperiment(Experiment):
         if not isinstance(self.params['model'], str) and isinstance(self.params['model'], torch.nn.Module):
             params['model'] = self.params['model'].__module__
 
-        schedule = params["pruning_kwargs"]["schedule"]
+        schedule = params["pruning_kwargs"]["scheduler"]
         if hasattr(schedule, "__call__"):
-            params["pruning_kwargs"]["schedule"] = schedule.__name__
+            params["pruning_kwargs"]["scheduler"] = schedule.__name__
 
         assert isinstance(self.params['model'], str), f"\nUnexpected model inputs: {self.params['model']}"
         return json.dumps(params, indent=4)
