@@ -1,13 +1,16 @@
-from shrinkbench.experiment import PruningExperiment
-from matplotlib import pyplot as plt
-import numpy as np
-
+from abc import ABC
 import os, sys
-os.environ['DATAPATH'] = '/home/younghwan/workspace/shrinkbench/data'
-os.environ['WEIGHTSPATH'] = '/home/younghwan/workspace/shrinkbench/pretrained'
+import numpy as np
+from matplotlib import pyplot as plt
 
 import torch
 import torchvision
+
+from shrinkbench.experiment import PruningExperiment
+
+os.environ['DATAPATH'] = '/home/younghwan/workspace/shrinkbench/data'
+os.environ['WEIGHTSPATH'] = '/home/younghwan/workspace/shrinkbench/pretrained'
+
 
 alexnet = torch.hub.load('pytorch/vision:v0.6.0', 'alexnet', pretrained=True)
 
@@ -21,6 +24,7 @@ def debugger(function):
 
 # Zhu et al.,ICLR '18 and keras implementation
 # @debugger
+# Stateless generator
 def polynomial_decay_const_freq(self, step):
     # Gradually increasing pruning rate
     p = min(1.0, max(0.0, (step - self.begin_step) / (self.end_step - self.begin_step)))
@@ -30,18 +34,30 @@ def polynomial_decay_const_freq(self, step):
     waiting_steps = 100
     return sparsity, waiting_steps
 
-def const_sp_const_freq(self, step):
-    n = 10
-    # Constant sparsity w/ n-steps
-    target_sparsity = 0.95
-    sparsity = 1-(1-target_sparsity)**(1.0/n)
+# Stateful generator
+class const_sp_const_freq(ABC):
+    def __init__(self, pruning):
+        target_sparsity = 0.95
 
-    # Constant frequency
-    waiting_steps = np.floor(float(self.end_step - self.begin_step) / n)
-    return sparsity, waiting_steps
+        # Constant sparsity w/ n-steps
+        # Constant state
+        self.n = 10
+        self.step_sparsity = 1-(1-target_sparsity)**(1.0/self.n)
+        self.waiting_steps = np.floor(float(pruning.end_step - pruning.begin_step) / self.n)
+
+        # Variable state
+        self.sparsity = self.step_sparsity
+
+    def next(self, step):
+        # Constant sparsity w/ n-steps
+        prev_sparsity = self.sparsity
+        self.sparsity = 1 - (1-self.step_sparsity)*(1-self.sparsity)
+
+        # Constant frequency
+        return prev_sparsity, waiting_steps
 
 def const_sp_lraware_freq(self, step):
-    n = 10
+    n = 2
     # Constant sparsity w/ n-steps
     target_sparsity = 0.98
     sparsity = 1-(1-target_sparsity)**(1.0/(n+1))
@@ -73,7 +89,7 @@ for strategy in ['GlobalMagWeight']:
                     'initial_sparsity': 0.5,
                     'final_sparsity': 0.98,
                     'begin_epoch': 0,
-                    'end_epoch': 10,
+                    'end_epoch': 5,
                     'strategy': strategy,
                     'weight_reset_epoch': 0,
                     # 'schedule': polynomial_decay_const_freq
@@ -81,7 +97,7 @@ for strategy in ['GlobalMagWeight']:
                     # 'schedule': nosparse
                 },
                 train_kwargs={
-                    'epochs': 200,
+                    'epochs': 6,
                 },
                 dl_kwargs={
                     'batch_size': 128,

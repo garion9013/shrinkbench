@@ -210,7 +210,7 @@ class TrainingExperiment(Experiment):
 
     @property
     def train_metrics(self):
-        return ['epoch', 'timestamp',
+        return ["steps", 'epoch', 'timestamp',
                 'train_loss', 'train_acc1', 'train_acc5',
                 'val_loss', 'val_acc1', 'val_acc5',
                 ]

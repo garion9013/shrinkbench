@@ -77,7 +77,7 @@ class PruningExperiment(TrainingExperiment):
 
         self.run_epochs()
 
-    def run_epoch(self, train, epoch=0):
+    def run_epoch(self, train, epoch=0, after_pruning=False):
         if train:
             self.model.train()
             prefix = 'train'
@@ -92,7 +92,10 @@ class PruningExperiment(TrainingExperiment):
         acc5 = OnlineStats()
 
         epoch_iter = tqdm(dl)
-        epoch_iter.set_description(f"{prefix.capitalize()} Epoch {epoch}/{self.epochs}")
+        desc = f"{prefix.capitalize()} Epoch {epoch}/{self.epochs}"
+        if after_pruning:
+            desc = f"{prefix.capitalize()} Steps {self.steps}"
+        epoch_iter.set_description(desc)
 
         with torch.set_grad_enabled(train):
             for i, (x, y) in enumerate(epoch_iter, start=1):
@@ -148,7 +151,7 @@ class PruningExperiment(TrainingExperiment):
                     self.checkpoint()
                 # TODO Early stopping
                 # TODO ReduceLR on plateau?
-                self.log(timestamp=time.time()-since)
+                self.log(timestamp=time.time()-since, steps=self.steps)
                 self.log_epoch(epoch)
 
 
@@ -187,7 +190,8 @@ class PruningExperiment(TrainingExperiment):
         metrics['theoretical_speedup'] = ops / ops_nz
 
         # Accuracy
-        loss, acc1, acc5 = self.run_epoch(False, -1)
+        loss, acc1, acc5 = self.run_epoch(False, -1, after_pruning=True)
+        self.log(steps=self.steps)
         self.log_epoch(-1)
 
         metrics['loss'] = loss
