@@ -18,11 +18,12 @@ class VisionPruning(Pruning):
 
     def can_prune(self, module):
 
-        if hasattr(module, 'is_classifier'):
-            return not module.is_classifier
-        if isinstance(module, (MaskedModule, nn.Linear, nn.Conv2d)):
-            return True
-        return False
+        # if hasattr(module, 'is_classifier'):
+        #     return not module.is_classifier
+        # if isinstance(module, (MaskedModule, nn.Linear, nn.Conv2d)):
+        #     return True
+        # return False
+        return True
 
     def prunable_modules(self):
         if not any([getattr(module, 'is_classifier', False) for module in self.model.modules()]):

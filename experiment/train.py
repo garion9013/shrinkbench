@@ -98,8 +98,9 @@ class TrainingExperiment(Experiment):
 
     def build_train(self, optim, epochs, resume_optim=False, **optim_kwargs):
         default_optim_kwargs = {
-            'SGD': {'momentum': 0.9, 'nesterov': True, 'lr': 1e-3},
-            'Adam': {'momentum': 0.9, 'betas': (.9, .99), 'lr': 1e-4}
+            # 'SGD': {'momentum': 0.9, 'nesterov': True, 'lr': 1e-3, 'weight_decay': 1e-4},
+            'SGD': {'momentum': 0.9, 'lr': 1e-3, 'weight_decay': 1e-4},
+            'Adam': {'momentum': 0.9, 'betas': (.9, .99), 'lr': 1e-4, 'weight_decay': 1e-4}
         }
 
         self.epochs = epochs
@@ -119,7 +120,9 @@ class TrainingExperiment(Experiment):
             self.optim.load_state_dict(previous['optim_state_dict'])
 
         # Assume classification experiment
-        self.loss_func = nn.CrossEntropyLoss()
+        self.loss_func = nn.CrossEntropyLoss().cuda()
+
+        self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optim, milestones=[100,150])
 
     def to_device(self):
         # Torch CUDA config
@@ -146,6 +149,7 @@ class TrainingExperiment(Experiment):
                 printc(f"Start epoch {epoch}", color='YELLOW')
                 self.train(epoch)
                 self.eval(epoch)
+                self.lr_scheduler.step()
                 # Checkpoint epochs
                 # TODO Model checkpointing based on best val loss/acc
                 if epoch % self.save_freq == 0:
@@ -210,7 +214,7 @@ class TrainingExperiment(Experiment):
 
     @property
     def train_metrics(self):
-        return ["steps", 'epoch', 'timestamp',
+        return ["steps", 'epoch', 'lr', 'timestamp',
                 'train_loss', 'train_acc1', 'train_acc5',
                 'val_loss', 'val_acc1', 'val_acc5',
                 ]

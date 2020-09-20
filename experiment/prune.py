@@ -141,16 +141,19 @@ class PruningExperiment(TrainingExperiment):
         since = time.time()
         try:
             for epoch in range(self.epochs):
-                printc(f"Start epoch {epoch}", color='YELLOW')
+                current_lr = self.optim.param_groups[0]['lr']
+                printc(f"Start epoch {epoch}, {current_lr:.5e}", color='YELLOW')
                 self.train(epoch)
                 self.eval(epoch)
+                self.lr_scheduler.step()
+
                 # Checkpoint epochs
                 # TODO Model checkpointing based on best val loss/acc
                 if epoch % self.save_freq == 0:
                     self.checkpoint()
                 # TODO Early stopping
                 # TODO ReduceLR on plateau?
-                self.log(timestamp=time.time()-since, steps=self.steps)
+                self.log(timestamp=time.time()-since, steps=self.steps, lr=current_lr)
                 self.log_epoch(epoch)
 
 

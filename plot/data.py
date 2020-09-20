@@ -4,7 +4,7 @@ import string
 import pandas as pd
 
 COLUMNS = ['dataset', 'model',
-           'strategy', 'schedule',
+           'strategy', 'scheduler',
            'size', 'size_nz', 'real_compression',
            'flops', 'flops_nz', 'speedup',
            'pre_acc1', 'pre_acc5', 'post_acc1', 'post_acc5',
@@ -34,7 +34,7 @@ def df_from_results(results_path, glob='*', delimiter=",", no_first_validation=T
             params['dataset'],
             params['model'],
             params['pruning_kwargs']['strategy'],
-            params['pruning_kwargs']['schedule'],
+            params['pruning_kwargs']['scheduler'],
             # Metrics
             metrics['size'],
             metrics['size_nz'],
@@ -54,7 +54,7 @@ def df_from_results(results_path, glob='*', delimiter=",", no_first_validation=T
             params['train_kwargs']['epochs'],
             # params['train_kwargs']['optim'],
             # params['train_kwargs']['lr'],
-            len(logs), #Completed epochs
+            len(logs.loc[logs["epoch"] >= 0]), #Completed epochs
             str(exp),
         ]
         results.append(row)
