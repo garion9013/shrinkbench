@@ -64,6 +64,7 @@ def nosparse(ctxt, step):
     return sparsity, waiting_steps
 
 
+train_epoch = 5
 # for strategy in ['GlobalMagWeightInclusive']:
 for strategy in ['GlobalMagWeight']:
     exp = PruningExperiment(
@@ -77,9 +78,12 @@ for strategy in ['GlobalMagWeight']:
                 # model='MnistNet',
                 pruning_kwargs={
                     'begin_epoch': 0,
-                    'end_epoch': 5,
+                    'end_epoch': train_epoch-1,
                     'strategy': strategy,
                     'weight_reset_epoch': 0,
+                    # ==================================================================
+                    # Pruning rate, iteration scheduler
+                    # ==================================================================
                     'scheduler': polynomial_decay_const_freq,
                     'scheduler_args': {"initial_sparsity":0.5, 'final_sparsity':0.9}
                     # 'scheduler': const_sp_const_freq,
@@ -87,10 +91,17 @@ for strategy in ['GlobalMagWeight']:
                     # 'scheduler': nosparse,
                 },
                 train_kwargs={
-                    'epochs': 6,
+                    # ==================================================================
+                    # Learning rate scheduler
+                    # ==================================================================
+                    'optim': 'SGD',
+                    'lr': 1e-5,
+#                     'lr_scheduler': "",
+                    'epochs': train_epoch,
                 },
                 dl_kwargs={
                     'batch_size': 128,
+                    'pin_memory': True,
                 },
                 pretrained=True,
                 save_freq=10

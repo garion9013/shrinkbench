@@ -20,7 +20,7 @@ from ..util import printc, OnlineStats
 class TrainingExperiment(Experiment):
 
     default_dl_kwargs = {'batch_size': 16,
-                         'pin_memory': False,
+                         'pin_memory': True,
                          'num_workers': 8
                          }
 
