@@ -2,7 +2,7 @@ from shrinkbench.experiment import PruningExperiment
 from matplotlib import pyplot as plt
 import numpy as np
 
-import os
+import os, sys
 os.environ['DATAPATH'] = '/home/younghwan/workspace/shrinkbench/data'
 os.environ['WEIGHTSPATH'] = '/home/younghwan/workspace/shrinkbench/pretrained'
 
@@ -41,13 +41,20 @@ def const_sp_const_freq(self, step):
     return sparsity, waiting_steps
 
 def const_sp_lraware_freq(self, step):
-    n = 2
+    n = 10
     # Constant sparsity w/ n-steps
     target_sparsity = 0.98
     sparsity = 1-(1-target_sparsity)**(1.0/(n+1))
 
     # Constant frequency
     waiting_steps = np.ceil(float(self.end_step - self.begin_step) / n)
+    return sparsity, waiting_steps
+
+def nosparse(self, step):
+    sparsity = 0
+
+    # Constant frequency
+    waiting_steps = sys.maxsize
     return sparsity, waiting_steps
 
 
@@ -68,16 +75,18 @@ for strategy in ['GlobalMagWeight']:
                     'begin_epoch': 0,
                     'end_epoch': 10,
                     'strategy': strategy,
-                    'schedule': polynomial_decay_const_freq
-                    # 'schedule': const_sp_const_freq
+                    'weight_reset_epoch': 0,
+                    # 'schedule': polynomial_decay_const_freq
+                    'schedule': const_sp_const_freq
+                    # 'schedule': nosparse
                 },
                 train_kwargs={
-                    'epochs': 10,
+                    'epochs': 200,
                 },
                 dl_kwargs={
                     'batch_size': 128,
                 },
                 pretrained=True,
-                save_freq=1
+                save_freq=10
     )
     exp.run()

@@ -47,6 +47,7 @@ class Pruning(ABC):
         # Update prunable parameters after backward pass
         sparsity, next_waiting_steps = self.schedule(self, step)
         self.compression = 1/(1-sparsity)
+        assert self.compression >= 1, "Unacceptable compression rate"
         self.init(self.compression)
         return next_waiting_steps
 

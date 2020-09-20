@@ -59,7 +59,7 @@ class PruningExperiment(TrainingExperiment):
         x, y = next(data_iter)
 
         # Inferred pruning parameters
-        kwargs["compression"] = 1/(1-kwargs["initial_sparsity"])
+        kwargs["compression"] = None
         kwargs["begin_step"] = kwargs["begin_epoch"] * len(data_iter)
         kwargs["end_step"] = kwargs["end_epoch"] * len(data_iter)
 
@@ -75,8 +75,7 @@ class PruningExperiment(TrainingExperiment):
 
         self.save_metrics()
 
-        if self.pruning.compression > 1:
-            self.run_epochs()
+        self.run_epochs()
 
     def run_epoch(self, train, epoch=0):
         if train:

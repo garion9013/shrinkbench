@@ -4,18 +4,20 @@ import string
 import pandas as pd
 
 COLUMNS = ['dataset', 'model',
-           'strategy', 'compression',
+           'strategy', 'schedule',
            'size', 'size_nz', 'real_compression',
            'flops', 'flops_nz', 'speedup',
            'pre_acc1', 'pre_acc5', 'post_acc1', 'post_acc5',
-           'seed', 'batch_size', 'epochs', 'optim', 'lr',
+           'seed', 'batch_size', 'epochs',
            'completed_epochs', 'path']
 
-
-def df_from_results(results_path, glob='*', delimiter=","):
+def df_from_results(results_path, glob='*', delimiter=",", no_first_validation=True):
     results = []
+    log_results = []
     results_path = pathlib.Path(results_path)
 
+    print("Available columns")
+    print(list(pd.read_csv(next(results_path.glob(glob))/'logs.csv').columns))
     for exp in results_path.glob(glob):
         with open(exp / 'params.json', 'r') as f:
             params = eval(json.load(f)['params'])
@@ -23,12 +25,16 @@ def df_from_results(results_path, glob='*', delimiter=","):
             metrics = json.load(f)
         logs = pd.read_csv(exp / 'logs.csv', delimiter=delimiter)
 
+        if no_first_validation:
+            logs = logs.loc[logs["epoch"] >= 0]
+
+        metrics = metrics[-1]
         row = [
             # Params
             params['dataset'],
             params['model'],
-            params['strategy'],
-            params['compression'],
+            params['pruning_kwargs']['strategy'],
+            params['pruning_kwargs']['schedule'],
             # Metrics
             metrics['size'],
             metrics['size_nz'],
@@ -46,17 +52,18 @@ def df_from_results(results_path, glob='*', delimiter=","):
             params['seed'],
             params['dl_kwargs']['batch_size'],
             params['train_kwargs']['epochs'],
-            params['train_kwargs']['optim'],
-            params['train_kwargs']['lr'],
+            # params['train_kwargs']['optim'],
+            # params['train_kwargs']['lr'],
             len(logs), #Completed epochs
             str(exp),
         ]
         results.append(row)
+        log_results.append(logs)
 
     df = pd.DataFrame(data=results, columns=COLUMNS)
-    df = broadcast_unitary_compression(df)
-    df = df.sort_values(by=['dataset', 'model', 'strategy', 'compression', 'seed'])
-    return df
+    # df = broadcast_unitary_compression(df)
+    df = df.sort_values(by=['dataset', 'model', 'strategy', 'seed'])
+    return df, log_results
 
 
 def df_filter(df, **kwargs):

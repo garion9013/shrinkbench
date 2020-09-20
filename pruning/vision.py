@@ -9,7 +9,7 @@ class VisionPruning(Pruning):
 
     def __init__(self, model, inputs=None, outputs=None, **kwargs):
         super().__init__(model, inputs, outputs, **kwargs)
-        self.init(self.compression)
+        # self.init(self.compression)
 
     def init(self, compression):
         # OYH: seems prunable isn't inplace updated during backward pass. while model is
