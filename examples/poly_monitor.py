@@ -27,7 +27,7 @@ for i, (exp_log, exp_param) in enumerate(zip(logs, params)):
     print(exp_param["train_kwargs"])
     print(args["scheduler"], args["scheduler_args"])
 
-    label = "-".join([ str(i) for i in list(args['scheduler_args'].values()) ])
+    label = "-".join([ str(i) for i in list(args['scheduler_args'].values())[1:] ])
     sns.lineplot(ax=ax, data=exp_log, x='epoch', y='val_acc1', label=label, marker="o")
 
 save_to_pdf(name="train.pdf")

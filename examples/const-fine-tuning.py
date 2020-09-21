@@ -62,28 +62,35 @@ def nosparse(ctxt, step):
     waiting_steps = sys.maxsize
     return sparsity, waiting_steps
 
-exploration = [
-    {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':10},
-    {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':10},
-    {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':10},
-    {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':50},
-    {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':50},
-    {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':50},
-    {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':100},
-    {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':100},
-    {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':100},
-    {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':200},
-    {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':200},
-    {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':200},
-    {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':400},
-    {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':400},
-    {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':400},
-    {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':800},
-    {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':800},
-    {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':800},
-]
+# exploration = [
+#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':10},
+#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':10},
+#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':10},
+#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':50},
+#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':50},
+#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':50},
+#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':100},
+#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':100},
+#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':100},
+#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':200},
+#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':200},
+#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':200},
+#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':400},
+#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':400},
+#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':400},
+#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':800},
+#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':800},
+#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':800},
+#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':1600},
+#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':1600},
+#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':1600},
+#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':3200},
+#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':3200},
+#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':3200},
+# ]
+exploration = [ {"n": i} for i in range(1,10) ]
 
-train_epoch = 100
+train_epoch = 40
 # for strategy in ['GlobalMagWeightInclusive']:
 for strategy in ['GlobalMagWeight']:
     for scheduler_args in exploration:
@@ -98,16 +105,16 @@ for strategy in ['GlobalMagWeight']:
                     # model='MnistNet',
                     pruning_kwargs={
                         'begin_epoch': 0,
-                        'end_epoch': train_epoch-1,
+                        'end_epoch': train_epoch-10,
                         'strategy': strategy,
                         'weight_reset_epoch': 0,
                         # ==================================================================
                         # Pruning rate, iteration scheduler
                         # ==================================================================
-                        'scheduler': polynomial_decay_const_freq,
-                        'scheduler_args': scheduler_args 
-                        # 'scheduler': const_sp_const_freq,
-                        # 'scheduler_args': {"n": 10}
+                        # 'scheduler': polynomial_decay_const_freq,
+                        # 'scheduler_args': scheduler_args 
+                        'scheduler': const_sp_const_freq,
+                        'scheduler_args': scheduler_args
                         # 'scheduler': nosparse,
                     },
                     train_kwargs={
@@ -125,6 +132,7 @@ for strategy in ['GlobalMagWeight']:
                     },
                     pretrained=True,
                     save_freq=10,
-                    path=pathlib.Path(f"./results/polynomial-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}-100epoch")
+                    # path=pathlib.Path(f"./results/polynomial-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}")
+                    path=pathlib.Path(f"./results/const-{scheduler_args['n']-40epoch}")
         )
         exp.run()

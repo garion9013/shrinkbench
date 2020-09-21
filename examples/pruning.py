@@ -78,17 +78,17 @@ for strategy in ['GlobalMagWeight']:
                 # model='MnistNet',
                 pruning_kwargs={
                     'begin_epoch': 0,
-                    'end_epoch': train_epoch-1,
+                    'end_epoch': train_epoch-10,
                     'strategy': strategy,
-                    'weight_reset_epoch': 0,
+                    'weight_reset': True,
                     # ==================================================================
                     # Pruning rate, iteration scheduler
                     # ==================================================================
-                    # 'scheduler': polynomial_decay_const_freq,
-                    # 'scheduler_args': {"initial_sparsity":0.5, 'final_sparsity':0.9}
+                    'scheduler': polynomial_decay_const_freq,
+                    'scheduler_args': {"initial_sparsity":0.5, 'final_sparsity':0.9}
                     # 'scheduler': const_sp_const_freq,
                     # 'scheduler_args': {"n": 10}
-                    'scheduler': nosparse,
+                    # 'scheduler': nosparse,
                 },
                 train_kwargs={
                     # ==================================================================
@@ -96,6 +96,7 @@ for strategy in ['GlobalMagWeight']:
                     # ==================================================================
                     'optim': 'SGD',
                     'lr': 0.1,
+                    'lr_scheduler': True,
                     'epochs': train_epoch,
                 },
                 dl_kwargs={
@@ -103,6 +104,7 @@ for strategy in ['GlobalMagWeight']:
                     'pin_memory': True,
                 },
                 pretrained=False,
-                save_freq=10
+                save_freq=10,
+                path=pathlib.Path(f"./results/scratch-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}")
     )
     exp.run()

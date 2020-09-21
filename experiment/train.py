@@ -32,6 +32,7 @@ class TrainingExperiment(Experiment):
 
     default_train_kwargs = {'optim': 'SGD',
                             'epochs': 30,
+                            'lr_scheduler': False,
                             'lr': 1e-3,
                             }
 
