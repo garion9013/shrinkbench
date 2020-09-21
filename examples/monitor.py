@@ -27,7 +27,6 @@ if isinstance(ax, matplotlib.axes.SubplotBase):
 for i, exp_log in enumerate(logs):
     exp_result = df.iloc[i]
     print(exp_result["strategy"], exp_result["real_compression"], exp_result["post_acc1"])
-    print(exp_log)
     sns.lineplot(ax=ax[i], data=exp_log, x='steps', y='val_acc1', label="val", marker="o")
     sns.lineplot(ax=ax[i], data=exp_log, x='steps', y='train_acc1', label="train", marker="o")
 

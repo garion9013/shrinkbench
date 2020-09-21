@@ -76,7 +76,42 @@ class PruningExperiment(TrainingExperiment):
 
         self.run_epochs()
 
-    def run_epoch(self, train, epoch=0, after_pruning=False):
+    def test_after_pruning(self, train, epoch=0):
+        dl = self.val_dl
+        self.model.eval()
+
+        total_loss = OnlineStats()
+        acc1 = OnlineStats()
+        acc5 = OnlineStats()
+
+        epoch_iter = iter(dl)
+
+        with torch.set_grad_enabled(train):
+            for i, (x, y) in enumerate(epoch_iter):
+                x, y = x.to(self.device), y.to(self.device)
+
+                # Forward
+                yhat = self.model(x)
+                loss = self.loss_func(yhat, y)
+                    
+                c1, c5 = correct(yhat, y, (1, 5))
+                total_loss.add(loss.item() / dl.batch_size)
+                acc1.add(c1 / dl.batch_size)
+                acc5.add(c5 / dl.batch_size)
+
+        print(f"Pruning Steps: {self.steps}, loss={total_loss.mean:.3f}, top1={acc1.mean:.3f}")
+
+        self.model.train()
+
+        self.log(**{
+            f'val_loss': total_loss.mean,
+            f'val_acc1': acc1.mean,
+            f'val_acc5': acc5.mean,
+        })
+
+        return total_loss.mean, acc1.mean, acc5.mean
+
+    def run_epoch(self, train, epoch=0):
         if train:
             self.model.train()
             prefix = 'train'
@@ -92,8 +127,6 @@ class PruningExperiment(TrainingExperiment):
 
         epoch_iter = tqdm(dl)
         desc = f"{prefix.capitalize()} Epoch {epoch}/{self.epochs}"
-        if after_pruning:
-            desc = f"{prefix.capitalize()} Steps {self.steps}"
         epoch_iter.set_description(desc)
 
         with torch.set_grad_enabled(train):
@@ -104,10 +137,10 @@ class PruningExperiment(TrainingExperiment):
                 # self.steps_after_pruning: how many mini-batch steps are performed 
                 # self.steps: total steps during training/pruning process
                 # Note that waiting_steps can be dynamically changed by user-specified schedule fn
-                # if train and self.steps_after_pruning >= self.waiting_steps:
-                #     self.waiting_steps = self.pruning.apply(self.steps)
-                #     self.save_metrics(steps=self.steps)
-                #     self.steps_after_pruning = 0
+                if train and self.steps_after_pruning >= self.waiting_steps:
+                    self.waiting_steps = self.pruning.apply(self.steps)
+                    self.save_metrics(steps=self.steps)
+                    self.steps_after_pruning = 0
 
                 # Forward
                 yhat = self.model(x)
@@ -192,7 +225,7 @@ class PruningExperiment(TrainingExperiment):
         metrics['theoretical_speedup'] = ops / ops_nz
 
         # Accuracy
-        loss, acc1, acc5 = self.run_epoch(False, -1, after_pruning=True)
+        loss, acc1, acc5 = self.test_after_pruning(False, -1)
         self.log(steps=self.steps)
         self.log_epoch(-1)
 
