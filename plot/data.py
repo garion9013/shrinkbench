@@ -11,9 +11,10 @@ COLUMNS = ['dataset', 'model',
            'seed', 'batch_size', 'epochs',
            'completed_epochs', 'path']
 
-def df_from_results(results_path, glob='*', delimiter=",", no_first_validation=True):
+def df_from_results(results_path, glob='*', delimiter=",", no_pruning_val=True):
     results = []
     log_results = []
+    param_results = []
     results_path = pathlib.Path(results_path)
 
     print("Available columns")
@@ -25,7 +26,7 @@ def df_from_results(results_path, glob='*', delimiter=",", no_first_validation=T
             metrics = json.load(f)
         logs = pd.read_csv(exp / 'logs.csv', delimiter=delimiter)
 
-        if no_first_validation:
+        if no_pruning_val:
             logs = logs.loc[logs["epoch"] >= 0]
 
         metrics = metrics[-1]
@@ -59,11 +60,12 @@ def df_from_results(results_path, glob='*', delimiter=",", no_first_validation=T
         ]
         results.append(row)
         log_results.append(logs)
+        param_results.append(params)
 
     df = pd.DataFrame(data=results, columns=COLUMNS)
     # df = broadcast_unitary_compression(df)
     df = df.sort_values(by=['dataset', 'model', 'strategy', 'seed'])
-    return df, log_results
+    return df, log_results, param_results
 
 
 def df_filter(df, **kwargs):

@@ -103,12 +103,6 @@ class PruningExperiment(TrainingExperiment):
 
         self.model.train()
 
-        self.log(**{
-            f'val_loss': total_loss.mean,
-            f'val_acc1': acc1.mean,
-            f'val_acc5': acc5.mean,
-        })
-
         return total_loss.mean, acc1.mean, acc5.mean
 
     def run_epoch(self, train, epoch=0):
@@ -178,7 +172,8 @@ class PruningExperiment(TrainingExperiment):
                 printc(f"Start epoch {epoch}, {current_lr:.5e}", color='YELLOW')
                 self.train(epoch)
                 self.eval(epoch)
-                self.lr_scheduler.step()
+                if hasattr(self, "lr_scheduler"):
+                    self.lr_scheduler.step()
 
                 # Checkpoint epochs
                 # TODO Model checkpointing based on best val loss/acc
@@ -226,7 +221,14 @@ class PruningExperiment(TrainingExperiment):
 
         # Accuracy
         loss, acc1, acc5 = self.test_after_pruning(False, -1)
-        self.log(steps=self.steps)
+
+        # Save pruning step stats to logs.csv. Note that epoch is -1
+        self.log(**{
+            'val_loss': loss,
+            'val_acc1': acc1,
+            'val_acc5': acc5,
+            'steps': self.steps
+        })
         self.log_epoch(-1)
 
         metrics['loss'] = loss

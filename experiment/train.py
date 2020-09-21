@@ -16,6 +16,12 @@ from ..metrics import correct
 from ..models.head import mark_classifier
 from ..util import printc, OnlineStats
 
+def is_jsonable(x):
+    try:
+        json.dumps(x)
+        return True
+    except:
+        return False
 
 class TrainingExperiment(Experiment):
 
@@ -96,7 +102,7 @@ class TrainingExperiment(Experiment):
             previous = torch.load(self.resume)
             self.model.load_state_dict(previous['model_state_dict'])
 
-    def build_train(self, optim, epochs, resume_optim=False, **optim_kwargs):
+    def build_train(self, optim, epochs, lr_scheduler, resume_optim=False, **optim_kwargs):
         default_optim_kwargs = {
             # 'SGD': {'momentum': 0.9, 'nesterov': True, 'lr': 1e-3, 'weight_decay': 1e-4},
             'SGD': {'momentum': 0.9, 'lr': 1e-3, 'weight_decay': 1e-4},
@@ -122,7 +128,8 @@ class TrainingExperiment(Experiment):
         # Assume classification experiment
         self.loss_func = nn.CrossEntropyLoss().cuda()
 
-        self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optim, milestones=[100,150])
+        if lr_scheduler is not False:
+            self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optim, milestones=[100,150])
 
     def to_device(self):
         # Torch CUDA config
@@ -227,6 +234,12 @@ class TrainingExperiment(Experiment):
         schedule = params["pruning_kwargs"]["scheduler"]
         if hasattr(schedule, "__call__"):
             params["pruning_kwargs"]["scheduler"] = schedule.__name__
+
+        for k, p in params.items():
+            if is_jsonable(p):
+                continue
+            else:
+                params[k] = "Non-serializable"
 
         assert isinstance(self.params['model'], str), f"\nUnexpected model inputs: {self.params['model']}"
         return json.dumps(params, indent=4)
