@@ -35,14 +35,14 @@ def polynomial_decay_const_freq(ctxt, step=0, initial_sparsity=0.5, final_sparsi
 
 # Stateful generator
 class const_sp_const_freq(ABC):
-    def __init__(self, n=10):
+    def __init__(self, ctxt, n=10):
         target_sparsity = 0.98
 
         # Constant sparsity w/ n-steps
         # Constant state
-        self.n = n
-        self.step_sparsity = 1-(1-target_sparsity)**(1.0/self.n)
-        self.waiting_steps = np.floor(float(pruning.end_step - pruning.begin_step) / self.n)
+        self.step_sparsity = 1-(1-target_sparsity)**(1.0/n)
+        self.waiting_steps = np.floor(float(ctxt.end_step - ctxt.begin_step) / n)
+        print(self.waiting_steps)
 
         # Variable state
         self.sparsity = self.step_sparsity
@@ -53,7 +53,7 @@ class const_sp_const_freq(ABC):
         self.sparsity = 1 - (1-self.step_sparsity)*(1-self.sparsity)
 
         # Constant frequency
-        return prev_sparsity, waiting_steps
+        return prev_sparsity, self.waiting_steps
 
 def nosparse(ctxt, step):
     sparsity = 0
@@ -88,7 +88,7 @@ def nosparse(ctxt, step):
 #     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':3200},
 #     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':3200},
 # ]
-exploration = [ {"n": i} for i in range(1,10) ]
+exploration = [ {"n": i} for i in [8,16,32,64,128,256] ]
 
 train_epoch = 40
 # for strategy in ['GlobalMagWeightInclusive']:
@@ -133,6 +133,6 @@ for strategy in ['GlobalMagWeight']:
                     pretrained=True,
                     save_freq=10,
                     # path=pathlib.Path(f"./results/polynomial-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}")
-                    path=pathlib.Path(f"./results/const-{scheduler_args['n']-40epoch}")
+                    path=pathlib.Path(f"./results/const-{scheduler_args['n']}")
         )
         exp.run()

@@ -35,8 +35,8 @@ def polynomial_decay_const_freq(ctxt, step=0, initial_sparsity=0.5, final_sparsi
 
 # Stateful generator
 class const_sp_const_freq(ABC):
-    def __init__(self, n=10):
-        target_sparsity = 0.98
+    def __init__(self, pruning, n=10):
+        target_sparsity = 0.95
 
         # Constant sparsity w/ n-steps
         # Constant state
@@ -87,10 +87,10 @@ exploration = [
     # {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':3200},
     # {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':3200},
     # {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':3200},
-    {"initial_sparsity":0, 'final_sparsity':0.80, 'waiting_step':s} for s in [10,50,100,200,400,800,1600,3200]
+    {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':s} for s in [10,50,100,200,400,800,1600,3200]
 ]
 
-train_epoch = 40
+train_epoch = 20
 # for strategy in ['GlobalMagWeightInclusive']:
 for strategy in ['GlobalMagWeight']:
     for scheduler_args in exploration:
@@ -121,8 +121,8 @@ for strategy in ['GlobalMagWeight']:
                         # ==================================================================
                         # Learning rate scheduler
                         # ==================================================================
-                        'optim': 'SGD',
-                        'lr': 1e-3,
+                        'optim': 'Adam',
+                        # 'lr': 1e-3,
                         'lr_scheduler': False,
                         'epochs': train_epoch,
                     },
@@ -132,6 +132,6 @@ for strategy in ['GlobalMagWeight']:
                     },
                     pretrained=True,
                     save_freq=10,
-                    path=pathlib.Path(f"./results/polynomial-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}")
+                    path=pathlib.Path(f"./results/epoch-20/adam-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}")
         )
         exp.run()

@@ -35,7 +35,7 @@ class Pruning(ABC):
             setattr(self, k, v)
 
         if isinstance(self.scheduler, type):
-            self.scheduler_gen = self.scheduler(**self.scheduler_args)
+            self.scheduler_gen = self.scheduler(self, **self.scheduler_args)
 
     @abstractmethod
     def model_masks(self, prunable=None):

@@ -107,7 +107,7 @@ class TrainingExperiment(Experiment):
         default_optim_kwargs = {
             # 'SGD': {'momentum': 0.9, 'nesterov': True, 'lr': 1e-3, 'weight_decay': 1e-4},
             'SGD': {'momentum': 0.9, 'lr': 1e-3, 'weight_decay': 1e-4},
-            'Adam': {'momentum': 0.9, 'betas': (.9, .99), 'lr': 1e-4, 'weight_decay': 1e-4}
+            'Adam': {'betas': (.9, .99), 'lr': 1e-4, 'weight_decay': 1e-4}
         }
 
         self.epochs = epochs
