@@ -8,10 +8,11 @@ sns.set_theme(style="darkgrid")
 
 parser = argparse.ArgumentParser(description="Monitor scripts for shrinkbench results")
 parser.add_argument('-g', '--glob', default="*")
+parser.add_argument('-p', '--path', default="")
 args = parser.parse_args()
 
 
-df, logs, params = df_from_results('results', glob=args.glob)
+df, logs, params = df_from_results(f'results/{args.path}', glob=args.glob)
 
 fig, ax = plt.subplots(2, figsize=(7, 10))
 
