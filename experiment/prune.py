@@ -33,9 +33,10 @@ class PruningExperiment(TrainingExperiment):
                  pretrained=True,
                  resume=None,
                  resume_optim=False,
+                 gpu_number=0,
                  save_freq=10):
 
-        super(PruningExperiment, self).__init__(dataset, model, seed, path, dl_kwargs, train_kwargs, debug, pretrained, resume, resume_optim, save_freq)
+        super(PruningExperiment, self).__init__(dataset, model, seed, path, dl_kwargs, train_kwargs, debug, pretrained, resume, resume_optim, gpu_number, save_freq)
         pruning_kwargs = {**self.default_pruning_kwargs, **pruning_kwargs}
 
         params = locals()
@@ -49,7 +50,6 @@ class PruningExperiment(TrainingExperiment):
         self.steps = 0
 
         self.path = path
-        self.save_freq = save_freq
         self.metrics = []
 
     def build_pruning(self, **kwargs):

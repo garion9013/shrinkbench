@@ -47,6 +47,7 @@ class TrainingExperiment(Experiment):
                  pretrained=False,
                  resume=None,
                  resume_optim=False,
+                 gpu_number=0,
                  save_freq=10):
 
         # Default children kwargs
@@ -66,6 +67,7 @@ class TrainingExperiment(Experiment):
 
         self.build_train(resume_optim=resume_optim, **train_kwargs)
 
+        self.gpu_number = gpu_number
         self.path = path
         self.save_freq = save_freq
 
@@ -134,7 +136,7 @@ class TrainingExperiment(Experiment):
 
     def to_device(self):
         # Torch CUDA config
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device(f'cuda:{self.gpu_number}' if torch.cuda.is_available() else 'cpu')
         if not torch.cuda.is_available():
             printc("GPU NOT AVAILABLE, USING CPU!", color="ORANGE")
         self.model.to(self.device)
