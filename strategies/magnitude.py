@@ -8,6 +8,7 @@ so that overall desired compression is achieved
 """
 
 import numpy as np
+from torch.nn.utils import prune
 
 from ..pruning import (LayerPruning,
                        VisionPruning,
@@ -30,6 +31,20 @@ class GlobalMagWeight(VisionPruning):
         # print(flatten_importances(masks).mean())
         return masks
 
+class GlobalMagWeightTorch(VisionPruning):
+    # TODO: pytorch prune module
+
+    def model_masks(self):
+        parameters_to_prune = []
+        for layer in self.params(native=True).keys():
+            parameters_to_prune.append((layer , 'weight'))
+        prune.global_unstructured(
+            parameters_to_prune,
+            pruning_method = prune.L1Unstructured,
+            amount = self.sparsity
+        )
+        return masks
+
 class GlobalMagWeightInclusive(VisionPruning):
 
     def model_masks(self):
@@ -37,12 +52,15 @@ class GlobalMagWeightInclusive(VisionPruning):
         flat_importances = flatten_importances(importances)
 
         if hasattr(self, "prev_masks"):
-            flat_importances[self.prev_masks] = 0
+            flat_importances[flatten_importances(self.prev_masks).astype(np.bool)] = 0
 
         threshold = fraction_threshold(flat_importances, self.fraction)
         masks = importance_masks(importances, threshold)
+        if hasattr(self, "prev_masks"):
+            masks = { module: np.logical_and(prev_mask, masks[module])
+                     for module, prev_mask in self.prev_masks.items() }
 
-        self.prev_masks = flatten_importances(masks).astype(np.bool)
+        self.prev_masks = masks
         # print(self.prev_masks.mean())
         return masks
 

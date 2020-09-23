@@ -87,11 +87,11 @@ class Pruning(ABC):
     def module_params(self, module):
         return get_params(module)
 
-    def params(self, only_prunable=True):
+    def params(self, only_prunable=True, native=False):
         if only_prunable:
-            return {module: get_params(module) for module in self.prunable}
+            return {module: get_params(module, native=native) for module in self.prunable}
         else:
-            return {module: get_params(module) for module in self.model.modules()}
+            return {module: get_params(module, native=native) for module in self.model.modules()}
 
     def summary(self):
         rows = []

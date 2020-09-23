@@ -15,6 +15,7 @@ class VisionPruning(Pruning):
         # OYH: seems prunable isn't inplace updated during backward pass. while model is
         self.prunable = self.prunable_modules()
         self.fraction = fraction_to_keep(compression, self.model, self.prunable)
+        self.sparsity = 1-fraction_to_keep(compression, self.model, self.prunable)
 
     def can_prune(self, module):
 

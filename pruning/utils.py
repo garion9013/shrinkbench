@@ -45,7 +45,7 @@ def hook_applyfn(hook, model, forward=False, backward=False):
     return register_hook, hooks
 
 
-def get_params(model, recurse=False):
+def get_params(model, recurse=False, native=False):
     """Returns dictionary of paramters
 
     Arguments:
@@ -58,7 +58,7 @@ def get_params(model, recurse=False):
         Dict(str:numpy.ndarray) -- Dictionary of named parameters their
                                    associated parameter arrays
     """
-    params = {k: v.detach().cpu().numpy().copy()
+    params = {k: v.detach().clone() if native else v.detach().cpu().numpy().copy()
               for k, v in model.named_parameters(recurse=recurse)}
     return params
 
