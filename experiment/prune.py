@@ -4,7 +4,7 @@ from .train import TrainingExperiment
 
 from .. import strategies
 from ..metrics import model_size, flops
-from ..util import printc, OnlineStats
+from ..util import printc, OnlineStats, is_jsonable
 import time
 from tqdm import tqdm
 import torch
@@ -172,7 +172,7 @@ class PruningExperiment(TrainingExperiment):
                 current_lr = self.optim.param_groups[0]['lr']
                 printc(f"Start epoch {epoch}, {current_lr:.5e}", color='YELLOW')
                 self.train(epoch)
-                self.eval(epoch)
+                validation_stats = self.eval(epoch)
                 if hasattr(self, "lr_scheduler"):
                     self.lr_scheduler.step()
 
@@ -180,8 +180,26 @@ class PruningExperiment(TrainingExperiment):
                 # TODO Model checkpointing based on best val loss/acc
                 if epoch % self.save_freq == 0:
                     self.checkpoint()
-                # TODO Early stopping
-                # TODO ReduceLR on plateau?
+
+                # Early stop checking starts after end_step (end_epoch)
+                if self.pruning.end_step <= self.steps:
+
+                    self.stopper(self.steps, *validation_stats)
+                    if self.stopper is not None and self.stopper.early_stop:
+                        self.stopper.val_loss_min
+                        self.stopper.loss_min_step
+
+                        self.log(**{
+                            'val_loss': self.stopper.val_loss_min,
+                            'val_acc1': self.stopper.corr_val_acc1,
+                            'val_acc5': self.stopper.corr_val_acc5,
+                            'steps': self.stopper.loss_min_step,
+                            'lr':current_lr
+                        })
+                        self.log(timestamp=time.time()-since, steps=self.steps, lr=current_lr)
+                        self.log_epoch(-2)
+                        break
+
                 self.log(timestamp=time.time()-since, steps=self.steps, lr=current_lr)
                 self.log_epoch(epoch)
 
@@ -237,3 +255,22 @@ class PruningExperiment(TrainingExperiment):
         metrics['val_acc5'] = acc5
 
         return metrics
+
+    def __repr__(self):
+        params = self.params
+        if not isinstance(self.params['model'], str) and isinstance(self.params['model'], torch.nn.Module):
+            params['model'] = self.params['model'].__module__
+        assert isinstance(self.params['model'], str), f"\nUnexpected model inputs: {self.params['model']}"
+
+        schedule = params["pruning_kwargs"]["scheduler"]
+        if hasattr(schedule, "__call__"):
+            params["pruning_kwargs"]["scheduler"] = schedule.__name__
+
+        for k, p in params.items():
+            if is_jsonable(p):
+                continue
+            else:
+                params[k] = "Non-serializable"
+
+        return json.dumps(params, indent=4)
+

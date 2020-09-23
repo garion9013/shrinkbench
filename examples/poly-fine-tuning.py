@@ -13,8 +13,6 @@ os.environ['DATAPATH'] = '/home/younghwan/workspace/shrinkbench/data'
 os.environ['WEIGHTSPATH'] = '/home/younghwan/workspace/shrinkbench/pretrained'
 
 
-alexnet = torch.hub.load('pytorch/vision:v0.6.0', 'alexnet', pretrained=True)
-
 def debugger(function):
     def wrapper(self, step):
         sparsity = function(self, step)

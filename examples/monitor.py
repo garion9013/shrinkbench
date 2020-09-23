@@ -9,7 +9,7 @@ sns.set_theme(style="darkgrid")
 
 parser = argparse.ArgumentParser(description="Monitor scripts for shrinkbench results")
 parser.add_argument('-g', '--glob', default="*")
-parser.add_argument('-p', '--path', default="")
+parser.add_argument('-p', '--path', default="./results")
 args = parser.parse_args()
 
 

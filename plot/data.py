@@ -17,7 +17,7 @@ def df_from_results(results_path, glob='*', delimiter=",", no_pruning_val=True):
     param_results = []
     results_path = pathlib.Path(results_path)
 
-    print("Available columns")
+    print("Available columns on logs.csv")
     print(list(pd.read_csv(next(results_path.glob(glob))/'logs.csv').columns))
     for exp in results_path.glob(glob):
         with open(exp / 'params.json', 'r') as f:

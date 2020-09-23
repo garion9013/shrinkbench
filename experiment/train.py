@@ -10,18 +10,13 @@ from tqdm import tqdm
 import json
 
 from .base import Experiment
+from .util import EarlyStopping
 from .. import datasets
 from .. import models
 from ..metrics import correct
 from ..models.head import mark_classifier
-from ..util import printc, OnlineStats
+from ..util import printc, OnlineStats, is_jsonable
 
-def is_jsonable(x):
-    try:
-        json.dumps(x)
-        return True
-    except:
-        return False
 
 class TrainingExperiment(Experiment):
 
@@ -34,6 +29,7 @@ class TrainingExperiment(Experiment):
                             'epochs': 30,
                             'lr_scheduler': False,
                             'lr': 1e-3,
+                            'earlystop_args': False,
                             }
 
     def __init__(self,
@@ -105,11 +101,17 @@ class TrainingExperiment(Experiment):
             previous = torch.load(self.resume)
             self.model.load_state_dict(previous['model_state_dict'])
 
-    def build_train(self, optim, epochs, lr_scheduler, resume_optim=False, **optim_kwargs):
+    def build_train(self, optim, epochs, lr_scheduler, earlystop_args, resume_optim=False, **optim_kwargs):
         default_optim_kwargs = {
             # 'SGD': {'momentum': 0.9, 'nesterov': True, 'lr': 1e-3, 'weight_decay': 1e-4},
             'SGD': {'momentum': 0.9, 'lr': 1e-3, 'weight_decay': 1e-4},
             'Adam': {'betas': (.9, .99), 'lr': 1e-4, 'weight_decay': 1e-4}
+        }
+        default_earlystop_kwargs = {
+            'patience': 7,
+            'delta': 0,
+            'verbose': False,
+            "trace_func": print
         }
 
         self.epochs = epochs
@@ -131,6 +133,15 @@ class TrainingExperiment(Experiment):
         # Assume classification experiment
         self.loss_func = nn.CrossEntropyLoss().cuda()
 
+        # Early stopper
+        self.stopper = None
+        if earlystop_args is not False:
+            assert type(earlystop_args) is dict, "'earlystop' param should be dict. e.g. {'patience':7}"
+            earlystop_kwargs = {**default_earlystop_kwargs, **earlystop_args}
+            self.stopper = EarlyStopping(**earlystop_kwargs)
+
+        # Learning rate scheduler
+        # TODO: the hardcoded lr_scheduler (MultiStepLR) is only possible now
         if lr_scheduler is not False:
             self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optim, milestones=[100,150])
 
@@ -158,14 +169,18 @@ class TrainingExperiment(Experiment):
             for epoch in range(self.epochs):
                 printc(f"Start epoch {epoch}", color='YELLOW')
                 self.train(epoch)
-                self.eval(epoch)
-                self.lr_scheduler.step()
+                validation_stats = self.eval(epoch)
+                if hasattr(self, "lr_scheduler"):
+                    self.lr_scheduler.step()
                 # Checkpoint epochs
                 # TODO Model checkpointing based on best val loss/acc
                 if epoch % self.save_freq == 0:
                     self.checkpoint()
-                # TODO Early stopping
-                # TODO ReduceLR on plateau?
+
+                self.stopper(self.steps, *validation_stats)
+                if self.stopper is not None and self.stopper.early_stop:
+                    break
+
                 self.log(timestamp=time.time()-since)
                 self.log_epoch(epoch)
 
@@ -233,16 +248,6 @@ class TrainingExperiment(Experiment):
         params = self.params
         if not isinstance(self.params['model'], str) and isinstance(self.params['model'], torch.nn.Module):
             params['model'] = self.params['model'].__module__
-
-        schedule = params["pruning_kwargs"]["scheduler"]
-        if hasattr(schedule, "__call__"):
-            params["pruning_kwargs"]["scheduler"] = schedule.__name__
-
-        for k, p in params.items():
-            if is_jsonable(p):
-                continue
-            else:
-                params[k] = "Non-serializable"
 
         assert isinstance(self.params['model'], str), f"\nUnexpected model inputs: {self.params['model']}"
         return json.dumps(params, indent=4)

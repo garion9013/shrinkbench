@@ -24,7 +24,7 @@ def fraction_threshold(tensor, fraction):
         float -- Threshold
     """
     assert isinstance(tensor, np.ndarray)
-    if fraction != 1:
+    if 1-fraction > 0.0000001:
         nparam = sum(tensor.shape)
         k = int(np.round(nparam*(1-fraction)))
         threshold = max(np.partition(tensor, k)[:k])
