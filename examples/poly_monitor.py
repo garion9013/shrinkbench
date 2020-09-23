@@ -12,7 +12,7 @@ parser.add_argument('-p', '--path', default="")
 args = parser.parse_args()
 
 
-df, logs, params = df_from_results(f'results/{args.path}', glob=args.glob)
+df, logs, params = df_from_results(f'{args.path}', glob=args.glob)
 
 fig, ax = plt.subplots(2, figsize=(7, 10))
 
