@@ -4,19 +4,16 @@ from matplotlib import pyplot as plt
 import matplotlib
 import argparse
 
-parser = argparse.ArgumentParser(description="Monitor scripts for shrinkbench results")
-parser.add_argument('-g', '--glob', default="*")
-
-args = parser.parse_args()
-
 from shrinkbench.plot import df_from_results, plot_df, save_to_pdf
 sns.set_theme(style="darkgrid")
 
+parser = argparse.ArgumentParser(description="Monitor scripts for shrinkbench results")
+parser.add_argument('-g', '--glob', default="*")
+parser.add_argument('-p', '--path', default="")
+args = parser.parse_args()
 
-df, logs, params = df_from_results('results', glob=args.glob)
-# plot_df(df, 'real_compression', 'pre_acc1', markers='strategy', fig=False, line='--', colors='strategy', suffix=' - pre')
-# save_to_pdf(name="output.pdf")
-# plt.close()
+
+df, logs, params = df_from_results(f'{args.path}', glob=args.glob)
 
 fig, ax = plt.subplots(len(logs), figsize=(5, 10))
 
