@@ -52,16 +52,12 @@ class GlobalMagWeightInclusive(VisionPruning):
         flat_importances = flatten_importances(importances)
 
         if hasattr(self, "prev_masks"):
-            flat_importances[flatten_importances(self.prev_masks).astype(np.bool)] = 0
+            flat_importances[~flatten_importances(self.prev_masks).astype(np.bool)] = 0.0
 
         threshold = fraction_threshold(flat_importances, self.fraction)
         masks = importance_masks(importances, threshold)
-        if hasattr(self, "prev_masks"):
-            masks = { module: np.logical_and(prev_mask, masks[module])
-                     for module, prev_mask in self.prev_masks.items() }
 
         self.prev_masks = masks
-        # print(self.prev_masks.mean())
         return masks
 
 
