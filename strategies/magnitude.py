@@ -37,7 +37,7 @@ class GlobalMagWeightInclusive(VisionPruning):
         flat_importances = flatten_importances(importances)
 
         if hasattr(self, "prev_masks"):
-            flat_importances = flat_importances[self.prev_masks]
+            flat_importances[self.prev_masks] = 0
 
         threshold = fraction_threshold(flat_importances, self.fraction)
         masks = importance_masks(importances, threshold)
