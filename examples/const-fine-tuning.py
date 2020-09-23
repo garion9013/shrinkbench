@@ -11,20 +11,9 @@ from shrinkbench.experiment import PruningExperiment
 
 os.environ['DATAPATH'] = '/home/younghwan/workspace/shrinkbench/data'
 os.environ['WEIGHTSPATH'] = '/home/younghwan/workspace/shrinkbench/pretrained'
-
-
-alexnet = torch.hub.load('pytorch/vision:v0.6.0', 'alexnet', pretrained=True)
-
-def debugger(function):
-    def wrapper(self, step):
-        sparsity = function(self, step)
-        print("({}) ({}) ({}) ({})".format(self.begin_step, self.end_step, step, sparsity))
-        return sparsity
-    return wrapper
-    
+   
 
 # Zhu et al.,ICLR '18 and keras implementation
-# @debugger
 # Stateless generator
 def polynomial_decay_const_freq(ctxt, step=0, initial_sparsity=0.5, final_sparsity=0.95, waiting_step=100):
     # Gradually increasing pruning rate
@@ -64,11 +53,12 @@ def nosparse(ctxt, step):
 # exploration = [
 #     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':s} for s in [10,50,100,200,400,800,1600,3200]
 # ]
-exploration = [ {"n": i} for i in [2,4,8,16,32,64,128,256] ]
+# exploration = [ {"n": i} for i in [256,512] ]
+exploration = [ {"n": i} for i in [1024,2048] ]
 
-train_epoch = 120
-# for strategy in ['GlobalMagWeightInclusive']:
-for strategy in ['GlobalMagWeight']:
+train_epoch = 600
+for strategy in ['GlobalMagWeightInclusive']:
+# for strategy in ['GlobalMagWeight']:
     for scheduler_args in exploration:
         exp = PruningExperiment(
                     # dataset='ImageNet', 
@@ -81,7 +71,7 @@ for strategy in ['GlobalMagWeight']:
                     # model='MnistNet',
                     pruning_kwargs={
                         'begin_epoch': 0,
-                        'end_epoch': train_epoch-40,
+                        'end_epoch': 100,
                         'strategy': strategy,
                         'weight_reset_epoch': 0,
                         # ==================================================================
@@ -97,18 +87,21 @@ for strategy in ['GlobalMagWeight']:
                         # ==================================================================
                         # Learning rate scheduler
                         # ==================================================================
-                        'optim': 'Adam',
-                        # 'lr': 1e-3,
+                        'optim': "SGD",
+                        'lr': 1e-3,
                         'lr_scheduler': False,
                         'epochs': train_epoch,
+                        'earlystop_args': {'patience': 20} # earlystop checking starts after end_epoch
                     },
                     dl_kwargs={
                         'batch_size': 128,
                         'pin_memory': True,
+                        'num_workers': 0,
                     },
                     pretrained=True,
                     save_freq=10,
+                    gpu_number=1,
                     # path=pathlib.Path(f"./results/polynomial-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}")
-                    path=pathlib.Path(f"./results/epoch-120/const-0.98-{scheduler_args['n']}-adam")
+                    path=pathlib.Path(f"./results/earlystop-100~600/const-0.98-{scheduler_args['n']}-sgd-inclusive")
         )
         exp.run()
