@@ -11,9 +11,9 @@ parser.add_argument('-g', '--glob', default="*")
 args = parser.parse_args()
 
 
-df, logs, params = df_from_results('results/epoch-80', glob=args.glob)
+df, logs, params = df_from_results('results', glob=args.glob)
 
-fig, ax = plt.subplots(figsize=(7, 5))
+fig, ax = plt.subplots(2, figsize=(7, 10))
 
 for i, (exp_log, exp_param) in enumerate(zip(logs, params)):
     print("")
@@ -27,8 +27,9 @@ for i, (exp_log, exp_param) in enumerate(zip(logs, params)):
     print(exp_param["train_kwargs"])
     print(args["scheduler"], args["scheduler_args"])
 
-    label = exp_param["train_kwargs"]["optim"]+"-"+"-".join([ str(i) for i in list(args['scheduler_args'].values())[1:] ])
-    sns.lineplot(ax=ax, data=exp_log, x='epoch', y='val_acc1', label=label, marker="o")
+    label = exp_param["train_kwargs"]["optim"]+"-"+"-".join([ str(i) for i in list(args['scheduler_args'].values()) ])
+    sns.lineplot(ax=ax[0], data=exp_log, x='epoch', y='val_acc1', label=label, marker="o")
+    sns.lineplot(ax=ax[1], data=exp_log, x='epoch', y='val_loss', label=label, marker="o")
 
 # ax.legend(title="", ncol=1, loc="lower left", bbox_to_anchor=[0.5, 0], frameon=False)
 # plt.gcf().subplots_adjust(right=0.8)

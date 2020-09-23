@@ -40,9 +40,8 @@ class const_sp_const_freq(ABC):
 
         # Constant sparsity w/ n-steps
         # Constant state
-        self.step_sparsity = 1-(1-target_sparsity)**(1.0/n)
+        self.step_sparsity = 1-(1-target_sparsity)**(1.0/(n+1))
         self.waiting_steps = np.floor(float(ctxt.end_step - ctxt.begin_step) / n)
-        print(self.waiting_steps)
 
         # Variable state
         self.sparsity = self.step_sparsity
@@ -63,34 +62,11 @@ def nosparse(ctxt, step):
     return sparsity, waiting_steps
 
 # exploration = [
-#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':10},
-#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':10},
-#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':10},
-#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':50},
-#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':50},
-#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':50},
-#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':100},
-#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':100},
-#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':100},
-#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':200},
-#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':200},
-#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':200},
-#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':400},
-#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':400},
-#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':400},
-#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':800},
-#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':800},
-#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':800},
-#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':1600},
-#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':1600},
-#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':1600},
-#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':3200},
-#     {"initial_sparsity":0, 'final_sparsity':0.95, 'waiting_step':3200},
-#     {"initial_sparsity":0, 'final_sparsity':0.90, 'waiting_step':3200},
+#     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':s} for s in [10,50,100,200,400,800,1600,3200]
 # ]
-exploration = [ {"n": i} for i in [8,16,32,64,128,256] ]
+exploration = [ {"n": i} for i in [2,4,8,16,32,64,128,256] ]
 
-train_epoch = 40
+train_epoch = 120
 # for strategy in ['GlobalMagWeightInclusive']:
 for strategy in ['GlobalMagWeight']:
     for scheduler_args in exploration:
@@ -105,7 +81,7 @@ for strategy in ['GlobalMagWeight']:
                     # model='MnistNet',
                     pruning_kwargs={
                         'begin_epoch': 0,
-                        'end_epoch': train_epoch-10,
+                        'end_epoch': train_epoch-40,
                         'strategy': strategy,
                         'weight_reset_epoch': 0,
                         # ==================================================================
@@ -121,8 +97,8 @@ for strategy in ['GlobalMagWeight']:
                         # ==================================================================
                         # Learning rate scheduler
                         # ==================================================================
-                        'optim': 'SGD',
-                        'lr': 1e-3,
+                        'optim': 'Adam',
+                        # 'lr': 1e-3,
                         'lr_scheduler': False,
                         'epochs': train_epoch,
                     },
@@ -133,6 +109,6 @@ for strategy in ['GlobalMagWeight']:
                     pretrained=True,
                     save_freq=10,
                     # path=pathlib.Path(f"./results/polynomial-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}")
-                    path=pathlib.Path(f"./results/const-{scheduler_args['n']}")
+                    path=pathlib.Path(f"./results/epoch-120/const-0.98-{scheduler_args['n']}-adam")
         )
         exp.run()

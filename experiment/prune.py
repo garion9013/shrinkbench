@@ -131,7 +131,8 @@ class PruningExperiment(TrainingExperiment):
                 # self.steps_after_pruning: how many mini-batch steps are performed 
                 # self.steps: total steps during training/pruning process
                 # Note that waiting_steps can be dynamically changed by user-specified schedule fn
-                if train and self.steps_after_pruning >= self.waiting_steps:
+                if train and self.steps_after_pruning >= self.waiting_steps and \
+                  self.pruning.begin_step <= self.steps and self.pruning.end_step >= self.steps:
                     self.waiting_steps = self.pruning.apply(self.steps)
                     self.save_metrics(steps=self.steps)
                     self.steps_after_pruning = 0
