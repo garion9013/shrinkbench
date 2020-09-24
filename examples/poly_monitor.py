@@ -18,8 +18,10 @@ fig, ax = plt.subplots(2, figsize=(7, 10))
 
 n = len(logs)
 
+sorted_results = sorted(zip(logs, params), key=lambda x: x[1]["pruning_kwargs"]["scheduler_args"]["n"])
+
 sns.color_palette("Set2")
-for i, (exp_log, exp_param) in enumerate(zip(logs, params)):
+for i, (exp_log, exp_param) in enumerate(sorted_results):
     print("")
     exp_result = df.iloc[i]
     print('{}, sparsity = {}, acc1 = {}'.format(
