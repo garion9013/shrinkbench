@@ -24,12 +24,11 @@ def polynomial_decay_const_freq(ctxt, step=0, initial_sparsity=0.5, final_sparsi
 
 # Stateful generator
 class const_sp_const_freq(ABC):
-    def __init__(self, ctxt, n=10):
-        target_sparsity = 0.98
+    def __init__(self, ctxt, n=10, final_sparsity=0.95):
 
         # Constant sparsity w/ n-steps
         # Constant state
-        self.step_sparsity = 1-(1-target_sparsity)**(1.0/(n+1))
+        self.step_sparsity = 1-(1-final_sparsity)**(1.0/(n+1))
         self.waiting_steps = np.floor(float(ctxt.end_step - ctxt.begin_step) / n)
 
         # Variable state
@@ -53,8 +52,9 @@ def nosparse(ctxt, step):
 # exploration = [
 #     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':s} for s in [10,50,100,200,400,800,1600,3200]
 # ]
-# exploration = [ {"n": i} for i in [256,512] ]
-exploration = [ {"n": i} for i in [1024,2048] ]
+exploration = [ {"n": i, "final_sparsity":0.98} for i in [64,128] ]
+# exploration = [ {"n": i, "final_sparsity":0.98} for i in [256,512] ]
+# exploration = [ {"n": i, "final_sparsity":0.98} for i in [1024,2048] ]
 
 train_epoch = 600
 for strategy in ['GlobalMagWeightInclusive']:
@@ -64,7 +64,7 @@ for strategy in ['GlobalMagWeightInclusive']:
                     # dataset='ImageNet', 
                     # model=alexnet,
                     dataset='CIFAR10', 
-                    model='resnet20',
+                    model='resnet110',
                     # dataset='CIFAR100', 
                     # model='resnet20_100',
                     # dataset='MNIST', 
@@ -91,7 +91,7 @@ for strategy in ['GlobalMagWeightInclusive']:
                         'lr': 1e-3,
                         'lr_scheduler': False,
                         'epochs': train_epoch,
-                        'earlystop_args': {'patience': 20} # earlystop checking starts after end_epoch
+                        'earlystop_args': {'patience': 10} # earlystop checking starts after end_epoch
                     },
                     dl_kwargs={
                         'batch_size': 128,
@@ -100,8 +100,8 @@ for strategy in ['GlobalMagWeightInclusive']:
                     },
                     pretrained=True,
                     save_freq=10,
-                    gpu_number=1,
+                    gpu_number=2,
                     # path=pathlib.Path(f"./results/polynomial-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}")
-                    path=pathlib.Path(f"./results/earlystop-100~600/const-0.98-{scheduler_args['n']}-sgd-inclusive")
+                    path=pathlib.Path(f"./results/earlystop-100~600/resnet110/const-0.98-{scheduler_args['n']}-sgd-inclusive")
         )
         exp.run()

@@ -16,6 +16,9 @@ df, logs, params = df_from_results(f'{args.path}', glob=args.glob)
 
 fig, ax = plt.subplots(2, figsize=(7, 10))
 
+n = len(logs)
+
+sns.color_palette("Set2")
 for i, (exp_log, exp_param) in enumerate(zip(logs, params)):
     print("")
     exp_result = df.iloc[i]
@@ -29,8 +32,9 @@ for i, (exp_log, exp_param) in enumerate(zip(logs, params)):
     print(args["scheduler"], args["scheduler_args"])
 
     label = exp_param["train_kwargs"]["optim"]+"-"+"-".join([ str(i) for i in list(args['scheduler_args'].values()) ])
-    sns.lineplot(ax=ax[0], data=exp_log, x='epoch', y='val_acc1', label=label, marker="o")
-    sns.lineplot(ax=ax[1], data=exp_log, x='epoch', y='val_loss', label=label, marker="o")
+    kwargs = {"markers":True, "dashes":False, "palette":"flare"}
+    sns.lineplot(ax=ax[0], data=exp_log, x='epoch', y='val_acc1', label=label, **kwargs)
+    sns.lineplot(ax=ax[1], data=exp_log, x='epoch', y='val_loss', label=label, **kwargs)
 
 # ax.legend(title="", ncol=1, loc="lower left", bbox_to_anchor=[0.5, 0], frameon=False)
 # plt.gcf().subplots_adjust(right=0.8)
