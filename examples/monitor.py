@@ -35,6 +35,10 @@ for i, (exp_log, exp_param) in enumerate(sorted_results):
     args = exp_param["pruning_kwargs"]
     print(exp_param["train_kwargs"])
     print(args["scheduler"], args["scheduler_args"])
+    if "weight_reset" in args and args["weight_reset"]:
+        print("weight_reset: {}".format(args["weight_reset"]))
+    else:
+        print("weight_reset: False")
 
     sns.lineplot(ax=ax[i], data=exp_log, x='epoch', y='val_acc1', label="val", marker="o")
     sns.lineplot(ax=ax[i], data=exp_log, x='epoch', y='train_acc1', label="train", marker="o")

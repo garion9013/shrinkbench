@@ -30,10 +30,18 @@ for i, (exp_log, exp_param) in enumerate(sorted_results):
         exp_result["post_acc1"]
     ))
     args = exp_param["pruning_kwargs"]
-    print(exp_param["train_kwargs"])
+    # print(exp_param["train_kwargs"])
     print(args["scheduler"], args["scheduler_args"])
+    if "weight_reset" in args and args["weight_reset"]:
+        print("weight_reset: {}".format(args["weight_reset"]))
+        wgt_rst = "reset"
+    else:
+        print("weight_reset: False")
+        wgt_rst = ""
 
-    label = exp_param["train_kwargs"]["optim"]+"-"+"-".join([ str(i) for i in list(args['scheduler_args'].values()) ])
+    label = exp_param["train_kwargs"]["optim"]+"-"+ \
+            wgt_rst+"-"+ \
+            "-".join([ str(i) for i in list(args['scheduler_args'].values()) ])
     kwargs = {"markers":True, "dashes":False, "palette":"flare"}
     sns.lineplot(ax=ax[0], data=exp_log, x='epoch', y='val_acc1', label=label, **kwargs)
     sns.lineplot(ax=ax[1], data=exp_log, x='epoch', y='val_loss', label=label, **kwargs)
