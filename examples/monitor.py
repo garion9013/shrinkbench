@@ -15,13 +15,16 @@ args = parser.parse_args()
 
 df, logs, params = df_from_results(f'{args.path}', glob=args.glob)
 
-fig, ax = plt.subplots(len(logs), figsize=(5, 10))
+fig, ax = plt.subplots(len(logs), figsize=(5, 10), sharex=True)
 
 # If there exists only a single exp
 if isinstance(ax, matplotlib.axes.SubplotBase):
     ax = [ax]
 
-for i, (exp_log, exp_param) in enumerate(zip(logs, params)):
+max_epoch = []
+sorted_results = sorted(zip(logs, params), key=lambda x: x[1]["pruning_kwargs"]["scheduler_args"]["n"])
+
+for i, (exp_log, exp_param) in enumerate(sorted_results):
     print("")
     exp_result = df.iloc[i]
     print('{}, sparsity = {}, acc1 = {}'.format(
@@ -35,5 +38,11 @@ for i, (exp_log, exp_param) in enumerate(zip(logs, params)):
 
     sns.lineplot(ax=ax[i], data=exp_log, x='epoch', y='val_acc1', label="val", marker="o")
     sns.lineplot(ax=ax[i], data=exp_log, x='epoch', y='train_acc1', label="train", marker="o")
+    max_epoch.append(max(exp_log["epoch"]))
+
+for i in range(len(logs)):
+    ax[i].set_xlim([0, max(max_epoch)])
+
+plt.gcf().subplots_adjust(top=0.95)
 
 save_to_pdf(name="train.pdf")
