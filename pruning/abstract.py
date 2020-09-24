@@ -34,7 +34,7 @@ class Pruning(ABC):
         for k, v in pruning_params.items():
             setattr(self, k, v)
 
-        if isinstance(self.scheduler, type):
+        if hasattr(self, "scheduler") and isinstance(self.scheduler, type):
             self.scheduler_gen = self.scheduler(self, **self.scheduler_args)
 
     @abstractmethod
@@ -51,9 +51,11 @@ class Pruning(ABC):
         if hasattr(self, "scheduler_gen"):
             # from generator class (stateful)
             sparsity, next_waiting_steps = self.scheduler_gen.next(step)
-        else:
+        elif hasattr(self, "scheduler"):
             # from generator fn (stateless)
             sparsity, next_waiting_steps = self.scheduler(self, step=step, **self.scheduler_args)
+        else:
+            raise AttributeError("Scheduler fn/obj is required to determine pruning step and amount")
 
         self.compression = 1/(1-sparsity)
         assert self.compression >= 1, "Unacceptable compression rate"
