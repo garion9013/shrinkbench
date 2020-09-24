@@ -182,7 +182,7 @@ class PruningExperiment(TrainingExperiment):
                     self.checkpoint()
 
                 # Early stop checking starts after end_step (end_epoch)
-                if self.pruning.end_step <= self.steps:
+                if self.pruning.end_step < self.steps:
 
                     self.stopper(self.steps, *validation_stats)
                     if self.stopper is not None and self.stopper.early_stop:
