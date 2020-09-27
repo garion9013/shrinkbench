@@ -34,6 +34,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
+import tempfile, pathlib
 
 from . import weights_path
 
@@ -122,21 +123,32 @@ class ResNet(nn.Module):
         return out
 
     @torch.no_grad()
+    def capture_weights(self, step):
+        self._handle = tempfile.TemporaryDirectory()
+        root = pathlib.Path(self._handle.name)
+        root.mkdir(exist_ok=True, parents=True)
+        self.weights_path = root / f"{self.name}.{step}"
+        torch.save({"model_state_dict":self.state_dict()}, self.weights_path)
+
+    @torch.no_grad()
     def weight_reset(self):
         assert hasattr(self, "weights_path"), "Should be loaded with a pretrained model in advance"
 
-        weights = torch.load(self.weights_path)['state_dict']
+        weights = torch.load(self.weights_path)["model_state_dict"]
         if list(weights.keys())[0].startswith('module.'):
             weights = {k[len("module."):]: v for k, v in weights.items()}
         self.load_state_dict(weights, strict=False)
+
+    def __del__(self):
+        self._handle.cleanup()
 
 
 def resnet_factory(filters, num_classes, weight_file):
     def _resnet(pretrained=True):
         model = ResNet(BasicBlock, filters, num_classes=num_classes)
+        model.name = weight_file
         if pretrained:
             weights = weights_path(weight_file)
-            model.weights_path = weights
             weights = torch.load(weights)['state_dict']
             # TODO have a better solution for DataParallel models
             # For models trained with nn.DataParallel
