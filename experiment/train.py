@@ -131,7 +131,7 @@ class TrainingExperiment(Experiment):
             self.optim.load_state_dict(previous['optim_state_dict'])
 
         # Assume classification experiment
-        self.loss_func = nn.CrossEntropyLoss().cuda()
+        self.loss_func = nn.CrossEntropyLoss().to(self.device)
 
         # Early stopper
         self.stopper = None
