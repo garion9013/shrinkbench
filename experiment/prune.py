@@ -19,7 +19,8 @@ class PruningExperiment(TrainingExperiment):
         'strategy': "GlobalMagWeight",
         'scheduler': None,
         'scheduler_args': {},
-        'weight_reset': False
+        'weight_reset': False,
+        'capture_epoch_for_reset': None,
     }
 
     def __init__(self,
@@ -173,6 +174,9 @@ class PruningExperiment(TrainingExperiment):
         since = time.time()
         try:
             for epoch in range(self.epochs):
+                if self.pruning.capture_epoch_for_reset == epoch:
+                    self.model.capture_weights(self.steps)
+
                 current_lr = self.optim.param_groups[0]['lr']
                 printc(f"Start epoch {epoch}, {current_lr:.5e}", color='YELLOW')
                 self.train(epoch)

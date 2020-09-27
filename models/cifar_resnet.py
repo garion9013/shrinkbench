@@ -139,8 +139,8 @@ class ResNet(nn.Module):
             weights = {k[len("module."):]: v for k, v in weights.items()}
         self.load_state_dict(weights, strict=False)
 
-    def __del__(self):
-        self._handle.cleanup()
+    # def __del__(self):
+    #     self._handle.cleanup()
 
 
 def resnet_factory(filters, num_classes, weight_file):

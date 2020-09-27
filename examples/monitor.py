@@ -46,6 +46,7 @@ for i, (exp_log, exp_param) in enumerate(sorted_results):
 
 for i in range(len(logs)):
     ax[i].set_xlim([0, max(max_epoch)])
+    ax[i].set_ylim([0.8, 1])
 
 plt.gcf().subplots_adjust(top=0.95)
 

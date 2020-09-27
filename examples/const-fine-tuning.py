@@ -52,11 +52,11 @@ def nosparse(ctxt, step):
 # exploration = [
 #     {"initial_sparsity":0, 'final_sparsity':0.98, 'waiting_step':s} for s in [10,50,100,200,400,800,1600,3200]
 # ]
-exploration = [ {"n": i, "final_sparsity":0.98} for i in [64,128] ]
+# exploration = [ {"n": i, "final_sparsity":0.98} for i in [8,16] ]
 # exploration = [ {"n": i, "final_sparsity":0.98} for i in [256,512] ]
-# exploration = [ {"n": i, "final_sparsity":0.98} for i in [1024,2048] ]
+exploration = [ {"n": i, "final_sparsity":0.95} for i in [2,4] ]
 
-train_epoch = 600
+train_epoch = 300
 for strategy in ['GlobalMagWeightInclusive']:
 # for strategy in ['GlobalMagWeight']:
     for scheduler_args in exploration:
@@ -64,16 +64,17 @@ for strategy in ['GlobalMagWeightInclusive']:
                     # dataset='ImageNet', 
                     # model=alexnet,
                     dataset='CIFAR10', 
-                    model='resnet110',
+                    model='resnet20',
                     # dataset='CIFAR100', 
                     # model='resnet20_100',
                     # dataset='MNIST', 
                     # model='MnistNet',
                     pruning_kwargs={
-                        'begin_epoch': 0,
-                        'end_epoch': 100,
+                        'begin_epoch': 5,
+                        'end_epoch': 200,
                         'strategy': strategy,
-                        'weight_reset_epoch': 0,
+                        'capture_epoch_for_reset': 5,
+                        'weight_reset': True,
                         # ==================================================================
                         # Pruning rate, iteration scheduler
                         # ==================================================================
@@ -87,9 +88,10 @@ for strategy in ['GlobalMagWeightInclusive']:
                         # ==================================================================
                         # Learning rate scheduler
                         # ==================================================================
+                        # 'optim': "Adam",
                         'optim': "SGD",
                         'lr': 1e-3,
-                        'lr_scheduler': False,
+                        'lr_scheduler': True,
                         'epochs': train_epoch,
                         'earlystop_args': {'patience': 10} # earlystop checking starts after end_epoch
                     },
@@ -98,10 +100,10 @@ for strategy in ['GlobalMagWeightInclusive']:
                         'pin_memory': True,
                         'num_workers': 0,
                     },
-                    pretrained=True,
-                    save_freq=10,
-                    gpu_number=2,
+                    pretrained=False,
+                    save_freq=9999,
+                    gpu_number=0,
                     # path=pathlib.Path(f"./results/polynomial-{scheduler_args['final_sparsity']}-step-{scheduler_args['waiting_step']}")
-                    path=pathlib.Path(f"./results/earlystop-100~600/resnet110/const-0.98-{scheduler_args['n']}-sgd-inclusive")
+                    path=pathlib.Path(f"./results/scratch/resnet20/const-0.95-{scheduler_args['n']}-sgd-inclusive")
         )
         exp.run()
