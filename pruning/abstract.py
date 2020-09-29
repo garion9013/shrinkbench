@@ -7,6 +7,8 @@ import pandas as pd
 from .mask import mask_module
 from .modules import MaskedModule
 from .utils import get_params
+import tempfile, pathlib
+import torch
 
 
 class Pruning(ABC):
@@ -70,11 +72,50 @@ class Pruning(ABC):
 
     @abstractmethod
     def can_prune(self, module):
-        pass
+        pass            
 
     def prunable_modules(self):
         prunable = [module for module in self.model.modules() if self.can_prune(module)]
         return prunable
+
+    def prunable_keys(self):
+        prunables = self.prunable_modules()
+        prunable_keys = []
+        for name, module in self.model.named_modules():
+            if module in prunables:
+                # Assuring prunable layer always have weight and bias
+                prunable_keys.append(name+".weight")
+                prunable_keys.append(name+".bias")
+        return prunable_keys
+
+    def capture_params(self, steps, only_prunable=True):
+        self._handle = tempfile.TemporaryDirectory()
+        tmp_path = pathlib.Path(self._handle.name)
+        tmp_path.mkdir(exist_ok=True, parents=True)
+        self.params_snapshot_path = tmp_path / f"{self.model.__class__.__name__}.{steps}"
+
+        params = self.model.state_dict()
+        if only_prunable:
+            params = dict(filter(lambda kv: kv[0] in self.prunable_keys(), params.items()))
+        torch.save({"model_state_dict":params}, self.params_snapshot_path)
+
+#     def weight_diff_norm(self):
+#         assert hasattr(self, "weights_path"), "Should be loaded with a pretrained model in advance"
+#
+#         weights = torch.load(self.weights_path)["model_state_dict"]
+#         if list(weights.keys())[0].startswith('module.'):
+#             weights = {k[len("module."):]: v for k, v in weights.items()}
+#         self.load_state_dict(weights, strict=False)
+#         for k,v in weights.items():
+#             delta = 
+
+    def reset_params(self):
+        assert hasattr(self, "params_snapshot_path"), "No saved model path (by self.captured_weights)"
+
+        weights = torch.load(self.params_snapshot_path)["model_state_dict"]
+        if list(weights.keys())[0].startswith('module.'):
+            weights = {k[len("module."):]: v for k, v in weights.items()}
+        self.model.load_state_dict(weights, strict=False)
 
     def __repr__(self):
         s = f"{self.__class__.__name__}("

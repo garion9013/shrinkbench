@@ -9,6 +9,7 @@ class VisionPruning(Pruning):
 
     def __init__(self, model, inputs=None, outputs=None, **kwargs):
         super().__init__(model, inputs, outputs, **kwargs)
+        self.prunable = self.prunable_modules()
         # self.init(self.compression)
 
     def init(self, compression):

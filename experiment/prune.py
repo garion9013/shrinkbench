@@ -35,6 +35,7 @@ class PruningExperiment(TrainingExperiment):
                  pretrained=True,
                  resume=None,
                  resume_optim=False,
+                 identifier=None,
                  gpu_number=0,
                  save_freq=10):
 
@@ -138,7 +139,7 @@ class PruningExperiment(TrainingExperiment):
                     self.waiting_steps = self.pruning.apply(self.steps)
                     if self.pruning.weight_reset:
                         print("Weight reset")
-                        self.model.weight_reset()
+                        self.pruning.reset_params()
                     self.save_metrics(steps=self.steps)
                     self.steps_after_pruning = 0
 
@@ -175,7 +176,7 @@ class PruningExperiment(TrainingExperiment):
         try:
             for epoch in range(self.epochs):
                 if self.pruning.capture_epoch_for_reset == epoch:
-                    self.model.capture_weights(self.steps)
+                    self.pruning.capture_params(self.steps)
 
                 current_lr = self.optim.param_groups[0]['lr']
                 printc(f"Start epoch {epoch}, {current_lr:.5e}", color='YELLOW')
